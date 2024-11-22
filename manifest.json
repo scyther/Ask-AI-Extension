@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Ask-AI",
+  "key": "memhegabnofnenganaigenkfjmhfbfha",
+  "trial-tokens": [
+    "AgRJBlD+Xw+nxKLfIG67AFssXMBNatTBvuiPyesJoP4uTuZrIiqqwIoc5odlfvetQlLdnjlax4Gqa+SCu5HGPAUAAAB4eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vbWVtaGVnYWJub2ZuZW5nYW5haWdlbmtmam1oZmJmaGEiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElGb3JFeHRlbnNpb24iLCJleHBpcnkiOjE3NjA0ODYzOTl9"
+  ],
+  "version": "1.0.0",
+  "description": "Chrome extension to add Ask AI Functionality to any WebPage",
+  "permissions": ["storage", "aiLanguageModelOriginTrial"],
+  "action": {
+    "default_popup": "index.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "content_scripts": [
+    {
+      "js": ["src/content.tsx"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  }
+}
