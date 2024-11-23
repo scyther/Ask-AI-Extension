@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Ask-AI",
   "key": "memhegabnofnenganaigenkfjmhfbfha",
-  "trial-tokens": [
+  "trial_tokens": [
     "AgRJBlD+Xw+nxKLfIG67AFssXMBNatTBvuiPyesJoP4uTuZrIiqqwIoc5odlfvetQlLdnjlax4Gqa+SCu5HGPAUAAAB4eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vbWVtaGVnYWJub2ZuZW5nYW5haWdlbmtmam1oZmJmaGEiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElGb3JFeHRlbnNpb24iLCJleHBpcnkiOjE3NjA0ODYzOTl9"
   ],
   "version": "1.0.0",

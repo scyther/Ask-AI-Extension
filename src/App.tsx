@@ -1,18 +1,25 @@
 import React from 'react'
 
 import Show from '@/components/Show'
+import { useChromeAI } from './hooks/useChromeAI'
 
 const Popup: React.FC = () => {
   const [isLoaded, setIsLoaded] = React.useState<boolean>(false)
+  const { checkPromptAPI } = useChromeAI()
 
   React.useEffect(() => {
-    const loadAnything = async () => {
+    const downloadChromeAI = async () => {
       if (!chrome) return
-
+      // const { available } =
+      await checkPromptAPI()
+      // if (!available) {
+      //   const { session } = await getPromptAPIsession()
+      //   session.destroy()
+      // }
       setIsLoaded(true)
     }
 
-    loadAnything()
+    downloadChromeAI()
   }, [])
 
   return (
