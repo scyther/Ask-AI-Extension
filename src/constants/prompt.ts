@@ -1,5 +1,5 @@
 export const SYSTEM_PROMPT = `
-You have all the text regarding the current web Page . Answer all questions based on the text.
+REPLACE_WITH_PAGE_TEXT . Answer all questions based on the text.
 
 Output Requirements:
 

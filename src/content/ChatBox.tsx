@@ -1,9 +1,8 @@
 import React, { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Bot, Copy, Send } from 'lucide-react'
+import { Bot, Copy, Send, Eraser } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { SYSTEM_PROMPT } from '@/constants/prompt'
-import { extractCode } from './util'
 
 import {
   Accordion,
@@ -31,10 +30,12 @@ interface ChatBoxProps {
 
 export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
   const [value, setValue] = React.useState('')
+  const url = document.URL || (Math.random() + 1).toString(36).substring(7)
   const [chatHistory, setChatHistory] = React.useState<ChatHistory[]>([])
   const [priviousChatHistory, setPreviousChatHistory] = React.useState<
     ChatHistory[]
   >([])
+  // const [sessionAI, setSessionAI] = React.useState<any>(null)
   const [isResponseLoading, setIsResponseLoading] =
     React.useState<boolean>(false)
   // const chatBoxRef = useRef<HTMLDivElement>(null)
@@ -46,7 +47,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
   const [totalMessages, setTotalMessages] = React.useState<number>(0)
   const [isPriviousMsgLoading, setIsPriviousMsgLoading] =
     React.useState<boolean>(false)
-  const { fetchChatHistory, saveChatHistory } = useIndexDB()
+  const { fetchChatHistory, saveChatHistory, deleteChatHistory } = useIndexDB()
   const { getPromptAPIsession } = useChromeAI()
 
   const inputFieldRef = useRef<HTMLInputElement>(null)
@@ -60,25 +61,38 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
     }, 0)
   }, [chatHistory, isResponseLoading, visible])
 
-
   const handleGenerateAIResponse = async (): Promise<void> => {
-
-
-
     const PCH = parseChatHistory(chatHistory)
+    const newSystemPrompt = SYSTEM_PROMPT.replace(
+      'REPLACE_WITH_PAGE_TEXT',
+      context.pageText
+    )
+    const session = await getPromptAPIsession(newSystemPrompt)
+    const AISession = session.session
 
-    const { error, success } = await modalService.generate({
-      prompt: `${value}`,
-      systemPrompt: systemPromptModified,
-      messages: PCH,
-    })
-
-    if (error) {
+    try {
+      // setSessionAI(session.session)
+      const result = await AISession.prompt(JSON.stringify(PCH))
+      const res: ChatHistory = {
+        role: 'assistant',
+        content: result,
+      }
+      await saveChatHistory(url, [
+        ...priviousChatHistory,
+        { role: 'user', content: value },
+        res,
+      ])
+      setPreviousChatHistory((prev) => [...prev, res])
+      setChatHistory((prev) => [...prev, res])
+      setValue('')
+      lastMessageRef.current?.scrollIntoView({ behavior: 'smooth' })
+    } catch (e: any) {
+      console.error(e)
       const errorMessage: ChatHistory = {
         role: 'assistant',
-        content: error.message,
+        content: e.message,
       }
-      await saveChatHistory(problemName, [
+      await saveChatHistory(url, [
         ...priviousChatHistory,
         { role: 'user', content: value },
         errorMessage,
@@ -89,33 +103,18 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
         return updatedChatHistory
       })
       lastMessageRef.current?.scrollIntoView({ behavior: 'smooth' })
+    } finally {
+      AISession.destroy()
+      setIsResponseLoading(false)
+      setTimeout(() => {
+        inputFieldRef.current?.focus()
+      }, 0)
     }
-
-    if (success) {
-      const res: ChatHistory = {
-        role: 'assistant',
-        content: success,
-      }
-      await saveChatHistory(problemName, [
-        ...priviousChatHistory,
-        { role: 'user', content: value },
-        res,
-      ])
-      setPreviousChatHistory((prev) => [...prev, res])
-      setChatHistory((prev) => [...prev, res])
-      setValue('')
-      lastMessageRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
-
-    setIsResponseLoading(false)
-    setTimeout(() => {
-      inputFieldRef.current?.focus()
-    }, 0)
   }
 
   const loadInitialChatHistory = async () => {
     const { totalMessageCount, chatHistory, allChatHistory } =
-      await fetchChatHistory(problemName, LIMIT_VALUE, 0)
+      await fetchChatHistory(url, LIMIT_VALUE, 0)
     setPreviousChatHistory(allChatHistory || [])
 
     setTotalMessages(totalMessageCount)
@@ -125,7 +124,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
 
   useEffect(() => {
     loadInitialChatHistory()
-  }, [problemName])
+  }, [url])
 
   const loadMoreMessages = async () => {
     if (totalMessages < offset) {
@@ -133,7 +132,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
     }
     setIsPriviousMsgLoading(true)
     const { chatHistory: moreMessages } = await fetchChatHistory(
-      problemName,
+      url,
       LIMIT_VALUE,
       offset
     )
@@ -283,6 +282,10 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
             setValue('')
           }}
           className="flex w-full items-center space-x-2"
+          onReset={async () => {
+            await deleteChatHistory(url)
+            setChatHistory([])
+          }}
         >
           <Input
             id="message"
@@ -295,6 +298,15 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
             required
             ref={inputFieldRef}
           />
+          <Button
+            type="reset"
+            className="bg-[#fafafa] rounded-lg text-black"
+            size="icon"
+            disabled={chatHistory.length === 0}
+          >
+            <Eraser className="h-4 w-4" />
+            <span className="sr-only">Clear</span>
+          </Button>
           <Button
             type="submit"
             className="bg-[#fafafa] rounded-lg text-black"

@@ -1,4 +1,3 @@
-import { SYSTEM_PROMPT } from '@/constants/prompt'
 import window from '@/interface/window'
 import { useState } from 'react'
 
@@ -11,9 +10,9 @@ export const useChromeAI = () => {
       return { available, defaultTemperature, defaultTopK, maxTopK }
     },
 
-    getPromptAPIsession: async () => {
+    getPromptAPIsession: async (newSystemPrompt: string) => {
       const session = await window.ai.languageModel.create({
-        systemPrompt : SYSTEM_PROMPT,
+        systemPrompt: newSystemPrompt,
         monitor(m: any) {
           m.addEventListener('downloadprogress', (e: any) => {
             setLoadedPercentage((e.loaded / e.total) * 100)
