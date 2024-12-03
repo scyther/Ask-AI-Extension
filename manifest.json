@@ -21,7 +21,7 @@
   "content_scripts": [
     {
       "js": ["src/content.tsx"],
-      "matches": ["https://*/docs*"]
+      "matches": ["https://*/docs*", "<all_urls>"]
     }
   ],
   "background": {

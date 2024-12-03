@@ -8,6 +8,7 @@
 ## Features
 - On-Device : No Data is sent to the cloud.
 - Code Snippet Generation
+- Previous Chat History - Storage (Indexed DB)
 
 ## Installation
 ```bash

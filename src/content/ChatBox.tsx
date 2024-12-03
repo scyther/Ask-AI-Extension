@@ -252,9 +252,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ visible }) => {
                     : 'bg-muted rounded-br-lg rounded-tl-lg rounded-tr-lg'
                 )}
               >
-                <div className="max-w-80">
-                  <Markdown>{message.content}</Markdown>
-                </div>
+                <Markdown className="max-w-80">{message.content}</Markdown>
               </div>
             ))}
             {isResponseLoading && (
