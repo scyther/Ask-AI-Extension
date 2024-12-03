@@ -1,17 +1,12 @@
-import { outputSchema } from '@/schema/modeOutput'
-import { z } from 'zod'
-
 export type Roles =
-  | 'function'
-  | 'system'
-  | 'user'
-  | 'assistant'
-  | 'data'
-  | 'tool'
+  // | 'function'
+  'system' | 'user' | 'assistant'
+// | 'data'
+// | 'tool'
 
 export interface ChatHistory {
   role: Roles
-  content: string | z.infer<typeof outputSchema>
+  content: string
 }
 
 // parse ChatHistory to new interface where content if z.infer<typeof outputSchema> than make it string

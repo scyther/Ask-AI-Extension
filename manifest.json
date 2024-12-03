@@ -6,7 +6,7 @@
     "AgRJBlD+Xw+nxKLfIG67AFssXMBNatTBvuiPyesJoP4uTuZrIiqqwIoc5odlfvetQlLdnjlax4Gqa+SCu5HGPAUAAAB4eyJvcmlnaW4iOiJjaHJvbWUtZXh0ZW5zaW9uOi8vbWVtaGVnYWJub2ZuZW5nYW5haWdlbmtmam1oZmJmaGEiLCJmZWF0dXJlIjoiQUlQcm9tcHRBUElGb3JFeHRlbnNpb24iLCJleHBpcnkiOjE3NjA0ODYzOTl9"
   ],
   "version": "1.0.0",
-  "description": "Chrome extension to add Ask AI Functionality to any WebPage",
+  "description": "Chrome extension to add Ask AI Functionality to any Documentations",
   "permissions": ["storage", "aiLanguageModelOriginTrial"],
   "action": {
     "default_popup": "index.html"
@@ -21,7 +21,7 @@
   "content_scripts": [
     {
       "js": ["src/content.tsx"],
-      "matches": ["<all_urls>"]
+      "matches": ["https://*/docs*"]
     }
   ],
   "background": {

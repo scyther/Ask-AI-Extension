@@ -1,20 +1,17 @@
 import React, { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Bot, Copy, Send, Eraser } from 'lucide-react'
+import { Bot, Send, Eraser } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { SYSTEM_PROMPT } from '@/constants/prompt'
+import { cn, extractUsefulData } from '@/lib/utils'
+import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import Markdown from 'react-markdown'
 
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
-
-import { cn } from '@/lib/utils'
-import { Card, CardContent, CardFooter } from '@/components/ui/card'
-
-import { ChatHistory, parseChatHistory } from '@/interface/chatHistory'
+  ChatHistory,
+  ChatHistoryParsed,
+  parseChatHistory,
+} from '@/interface/chatHistory'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 import { LIMIT_VALUE } from '@/lib/indexedDB'
@@ -28,14 +25,13 @@ interface ChatBoxProps {
   }
 }
 
-export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
+export const ChatBox: React.FC<ChatBoxProps> = ({ visible }) => {
   const [value, setValue] = React.useState('')
   const url = document.URL || (Math.random() + 1).toString(36).substring(7)
   const [chatHistory, setChatHistory] = React.useState<ChatHistory[]>([])
   const [priviousChatHistory, setPreviousChatHistory] = React.useState<
     ChatHistory[]
   >([])
-  // const [sessionAI, setSessionAI] = React.useState<any>(null)
   const [isResponseLoading, setIsResponseLoading] =
     React.useState<boolean>(false)
   // const chatBoxRef = useRef<HTMLDivElement>(null)
@@ -48,7 +44,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
   const [isPriviousMsgLoading, setIsPriviousMsgLoading] =
     React.useState<boolean>(false)
   const { fetchChatHistory, saveChatHistory, deleteChatHistory } = useIndexDB()
-  const { getPromptAPIsession } = useChromeAI()
+  const { createKeywords, askPrompt } = useChromeAI()
 
   const inputFieldRef = useRef<HTMLInputElement>(null)
 
@@ -61,18 +57,58 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
     }, 0)
   }, [chatHistory, isResponseLoading, visible])
 
-  const handleGenerateAIResponse = async (): Promise<void> => {
-    const PCH = parseChatHistory(chatHistory)
-    const newSystemPrompt = SYSTEM_PROMPT.replace(
-      'REPLACE_WITH_PAGE_TEXT',
-      context.pageText
-    )
-    const session = await getPromptAPIsession(newSystemPrompt)
-    const AISession = session.session
+  const handleGenerateAIResponse = async (
+    PCH: ChatHistoryParsed[]
+  ): Promise<void> => {
+    console.log('Generating AI Response...', PCH)
+
+    // let tempSession
+    // console.log('Parsed Chat History:', PCH)
+    // if (PCH.length === 0) return
+    // if (PCH.length <= 1 || !session) {
+    //   const chatContext = PCH.map((e) => e.content).join(' ')
+    //   console.log('Chat Context:', chatContext)
+    //   const keyWords = await createKeywords(chatContext)
+    //   console.log('Keywords:', keyWords)
+    //   const usefulData = extractUsefulData(keyWords)
+    //   console.log('Useful Data:', usefulData)
+
+    //   PCH.forEach((e) => {
+    //     if (e.role === 'system') {
+    //       e.content = SYSTEM_PROMPT.replace(
+    //         'REPLACE_WITH_PAGE_TEXT',
+    //         usefulData
+    //       )
+    //     }
+    //   })
+    //   //create new session
+    //   tempSession = await getPromptAPIsession(PCH)
+    // }
 
     try {
       // setSessionAI(session.session)
-      const result = await AISession.prompt(JSON.stringify(PCH))
+      // console.log('Prompting AI...', session)
+      // const AISession = session ?? tempSession
+
+      //get related data from the page
+      const keyWords = await createKeywords(PCH[PCH.length - 1].content)
+      console.log('Keywords:', keyWords)
+      const usefulData = extractUsefulData(keyWords)
+      console.log('Useful Data:', usefulData)
+      //if there is no role system in the chat history then add it on the top
+      if (!PCH.some((e) => e.role === 'system')) {
+        PCH.unshift({ role: 'system', content: SYSTEM_PROMPT })
+      }
+      PCH.forEach((e) => {
+        if (e.role === 'system') {
+          e.content = SYSTEM_PROMPT.replace(
+            'REPLACE_WITH_PAGE_TEXT',
+            usefulData
+          )
+        }
+      })
+      const result = await askPrompt(PCH)
+      console.log('AI Response:', result)
       const res: ChatHistory = {
         role: 'assistant',
         content: result,
@@ -104,7 +140,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
       })
       lastMessageRef.current?.scrollIntoView({ behavior: 'smooth' })
     } finally {
-      AISession.destroy()
+      // session.destroy()
       setIsResponseLoading(false)
       setTimeout(() => {
         inputFieldRef.current?.focus()
@@ -124,6 +160,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
 
   useEffect(() => {
     loadInitialChatHistory()
+    console.log('loaded chat history')
   }, [url])
 
   const loadMoreMessages = async () => {
@@ -159,13 +196,18 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
     setIsResponseLoading(true)
     const newMessage: ChatHistory = { role: 'user', content: value }
 
+    console.log('User Message:', newMessage)
     setPreviousChatHistory((prev) => {
       return [...prev, newMessage]
     })
-    setChatHistory([...chatHistory, newMessage])
-
+    setChatHistory((prev) => {
+      const updatedHistory = [...prev, newMessage]
+      console.log(updatedHistory) // Debugging line
+      return updatedHistory
+    })
+    const PCH = parseChatHistory([...chatHistory, newMessage])
+    handleGenerateAIResponse(PCH)
     lastMessageRef.current?.scrollIntoView({ behavior: 'smooth' })
-    handleGenerateAIResponse()
   }
 
   if (!visible) return <></>
@@ -210,52 +252,9 @@ export const ChatBox: React.FC<ChatBoxProps> = ({ context, visible }) => {
                     : 'bg-muted rounded-br-lg rounded-tl-lg rounded-tr-lg'
                 )}
               >
-                <>
-                  <p className="max-w-80">
-                    {typeof message.content === 'string'
-                      ? message.content
-                      : message.content.feedback}
-                  </p>
-
-                  {!(typeof message.content === 'string') && (
-                    <Accordion type="multiple">
-                      {message.content?.hints &&
-                        message.content.hints.length > 0 && (
-                          <AccordionItem value="item-1" className="max-w-80">
-                            <AccordionTrigger>Hints 👀</AccordionTrigger>
-                            <AccordionContent>
-                              <ul className="space-y-4">
-                                {message.content?.hints?.map((e) => (
-                                  <li key={e}>{e}</li>
-                                ))}
-                              </ul>
-                            </AccordionContent>
-                          </AccordionItem>
-                        )}
-                      {message.content?.snippet && (
-                        <AccordionItem value="item-2" className="max-w-80">
-                          <AccordionTrigger>Code 🧑🏻‍💻</AccordionTrigger>
-
-                          <AccordionContent>
-                            <div className="mt-4 rounded-md">
-                              <div className="relative">
-                                <Copy
-                                  onClick={() => {
-                                    if (typeof message.content !== 'string')
-                                      navigator.clipboard.writeText(
-                                        `${message.content?.snippet}`
-                                      )
-                                  }}
-                                  className="absolute right-2 top-2 h-4 w-4"
-                                />
-                              </div>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      )}
-                    </Accordion>
-                  )}
-                </>
+                <div className="max-w-80">
+                  <Markdown>{message.content}</Markdown>
+                </div>
               </div>
             ))}
             {isResponseLoading && (
